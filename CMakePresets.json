@@ -4,10 +4,23 @@
     "major": 3,
     "minor": 12
   },
+
   "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "RUN_IN_PLACE": "TRUE"
+      }
+    },
+
     {
       "name": "Debug",
       "displayName": "Debug",
+      "inherits": "base",
       "description": "Debug preset with debug symbols and no optimizations",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
@@ -16,6 +29,7 @@
     {
       "name": "Release",
       "displayName": "Release",
+      "inherits": "base",
       "description": "Release preset with optimizations and no debug symbols",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
@@ -24,6 +38,7 @@
     {
       "name": "RelWithDebInfo",
       "displayName": "RelWithDebInfo",
+      "inherits": "base",
       "description": "Release with debug symbols",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
@@ -32,6 +47,7 @@
     {
       "name": "MinSizeRel",
       "displayName": "MinSizeRel",
+      "inherits": "base",
       "description": "Release with minimal code size",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "MinSizeRel"

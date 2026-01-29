@@ -1,0 +1,309 @@
+Package: vcpkg-cmake
+Version: 2024-04-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: e14116dd5d9f0adb4cfe9326c280558749bd87a2cafedcea829e7e2c787b3ec3
+Status: install ok installed
+
+Package: zlib
+Version: 1.3.1
+Depends: vcpkg-cmake
+Architecture: x64-windows
+Multi-Arch: same
+Abi: b9240c005b7907b287cb7f3a6fc41cecbf1d432f657ce9d7a3d43f0bd4d96f01
+Description: A compression library
+Status: install ok installed
+
+Package: vcpkg-cmake-config
+Version: 2024-05-23
+Architecture: x64-windows
+Multi-Arch: same
+Abi: e3b087aca9a0af40fdc613fd961144b859eb20dce5fcb3cb14a11943ae8b2052
+Status: install ok installed
+
+Package: curl
+Version: 8.16.0
+Depends: vcpkg-cmake, vcpkg-cmake-config, zlib
+Architecture: x64-windows
+Multi-Arch: same
+Abi: edc1f2da75cd31b52a1fe08e8eb879297fbc2d9a84fc8bf7ec042b8302919f97
+Description: A library for transferring data with URLs
+Default-Features: non-http, ssl
+Status: install ok installed
+
+Package: curl
+Feature: non-http
+Architecture: x64-windows
+Multi-Arch: same
+Description: Enables protocols beyond HTTP/HTTPS/HTTP2/HTTP3
+Status: install ok installed
+
+Package: curl
+Feature: ssl
+Architecture: x64-windows
+Multi-Arch: same
+Description: Default SSL / TLS implementation.
+Status: install ok installed
+
+Package: curl
+Feature: sspi
+Architecture: x64-windows
+Multi-Arch: same
+Description: SSPI support
+Status: install ok installed
+
+Package: libpng
+Version: 1.6.50
+Depends: vcpkg-cmake, vcpkg-cmake-config, zlib
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 724d90ac6f0e7dcc6079eef8e01aa5bbde1861147488638efe21f8e5704455e3
+Description: libpng is a library implementing an interface for reading and writing PNG (Portable Network Graphics) format files
+Status: install ok installed
+
+Package: bzip2
+Version: 1.0.8
+Port-Version: 6
+Depends: vcpkg-cmake
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 4405e5f37e00e984054e10da6497c6148054432ba3537604bd1fbb28a3d84cff
+Description: bzip2 is a freely available, patent free, high-quality data compressor. It typically compresses files to within 10% to 15% of the best available techniques (the PPM family of statistical compressors), whilst being around twice as fast at compression and six times faster at decompression.
+Default-Features: tool
+Status: install ok installed
+
+Package: bzip2
+Feature: tool
+Architecture: x64-windows
+Multi-Arch: same
+Description: Builds bzip2 executable
+Status: install ok installed
+
+Package: brotli
+Version: 1.1.0
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: c456ba62289f4898c7687f7ce16ef4112b2800e57d388524db7bc8d194ec1b5e
+Description: a generic-purpose lossless compression algorithm that compresses data using a combination of a modern variant of the LZ77 algorithm, Huffman coding and 2nd order context modeling.
+Status: install ok installed
+
+Package: freetype
+Version: 2.13.3
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 4562321b5032c96805785c2c30e228386ac1fd368af8ccffa5696646586d955d
+Description: A library to render fonts.
+Default-Features: brotli, bzip2, png, zlib
+Status: install ok installed
+
+Package: freetype
+Feature: brotli
+Depends: brotli
+Architecture: x64-windows
+Multi-Arch: same
+Description: Support decompression of WOFF2 streams
+Status: install ok installed
+
+Package: freetype
+Feature: bzip2
+Depends: bzip2
+Architecture: x64-windows
+Multi-Arch: same
+Description: Support bzip2 compressed fonts.
+Status: install ok installed
+
+Package: freetype
+Feature: png
+Depends: libpng
+Architecture: x64-windows
+Multi-Arch: same
+Description: Support PNG compressed OpenType embedded bitmaps.
+Status: install ok installed
+
+Package: freetype
+Feature: zlib
+Depends: zlib
+Architecture: x64-windows
+Multi-Arch: same
+Description: Use zlib instead of internal library for DEFLATE
+Status: install ok installed
+
+Package: libiconv
+Version: 1.18
+Port-Version: 2
+Architecture: x64-windows
+Multi-Arch: same
+Abi: c6da1557b3ad82cebb4bb530e6b9e081abc224ac820606e0097509c19a217d62
+Description: iconv() text conversion.
+    This port installs GNU libiconv if the system C runtime doesn't provide a suitable iconv() implementation.
+Status: install ok installed
+
+Package: vcpkg-cmake-get-vars
+Version: 2025-05-29
+Depends: vcpkg-cmake
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 50c73ce76d6ec63c26d610addc570f10ad7979a2e535c949dd746614722eaf10
+Status: install ok installed
+
+Package: vcpkg-make
+Version: 2025-09-29
+Depends: vcpkg-cmake-get-vars
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 12f6753449f2343404de4cb544a9473d73c8763651ba2b832468c2f455de1f38
+Status: install ok installed
+
+Package: gettext-libintl
+Version: 0.22.5
+Port-Version: 4
+Depends: libiconv, vcpkg-make
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 4189fa1a054d0579f99f6f7299c5095c38afc0a91a40bc632f8d1521f0618383
+Description: The libintl C library from GNU gettext-runtime.
+Status: install ok installed
+
+Package: gettext
+Version: 0.22.5
+Port-Version: 3
+Depends: gettext-libintl
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 54d5ada0482a93e9f0f31cece024f20bb0d63af7d9959c0a73ffa57365b91abf
+Description: A GNU framework to help produce multi-lingual messages.
+Status: install ok installed
+
+Package: gettext
+Feature: tools
+Depends: libiconv
+Architecture: x64-windows
+Multi-Arch: same
+Description: Build gettext tools
+Status: install ok installed
+
+Package: gmp
+Version: 6.3.0
+Port-Version: 3
+Depends: vcpkg-cmake-get-vars
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 1bb4e8c2b86d3419993724951f702d19fd77296325ad26804e45a946c0834f95
+Description: The GNU Multiple Precision Arithmetic Library
+Status: install ok installed
+
+Package: jsoncpp
+Version: 1.9.6
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 92712421237616647c258ab7949c9e47a7d1fe37e12cf8fffcf0e4ae1cd73581
+Description: JsonCpp is a C++ library that allows manipulating JSON values, including serialization and deserialization to and from strings. It can also preserve existing comment in unserialization/serialization steps, making it a convenient format to store user input files.
+Status: install ok installed
+
+Package: libjpeg-turbo
+Version: 3.1.2
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 0dbce4e344de0906d7ad68cc13800eeac8e07df6f86e63ab0aa0e68080675e9c
+Description: libjpeg-turbo is a JPEG image codec that uses SIMD instructions (MMX, SSE2, NEON, AltiVec) to accelerate baseline JPEG compression and decompression on x86, x86-64, ARM, and PowerPC systems.
+Status: install ok installed
+
+Package: libogg
+Version: 1.3.6
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 0ceb3ba095ca39593974b04812d619665403c3fcc105ab7b0a3ce8db8ce1a261
+Description: Ogg is a multimedia container format, and the native file and stream format for the Xiph.org multimedia codecs.
+Status: install ok installed
+
+Package: libvorbis
+Version: 1.3.7
+Port-Version: 4
+Depends: libogg, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 8a667f673215a503b067bc15f84ec052ae8b2797abe4b31fc1e68a5d1a062aba
+Description: Ogg Vorbis is a fully open, non-proprietary, patent-and-royalty-free, general-purpose compressed audio format
+Status: install ok installed
+
+Package: luajit
+Version: 2023-01-04
+Port-Version: 7
+Depends: vcpkg-cmake, vcpkg-cmake-config, vcpkg-cmake-get-vars
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 594c55c0b95ff9eb2ac1911c61886ece955aca7986fcfc46f43adc2ca8998dab
+Description: LuaJIT is a Just-In-Time (JIT) compiler for the Lua programming language.
+Status: install ok installed
+
+Package: fmt
+Version: 12.0.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 242305ebf63fd4cd453656d9bc5944edb2f387378229d5e47ecf250a28394efd
+Description: {fmt} is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
+Status: install ok installed
+
+Package: openal-soft
+Version: 1.24.3
+Port-Version: 1
+Depends: fmt, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: d425c0d764cb4556f03b1916ec396eceea89a77adfd8a7b7b593b6036e972d52
+Description: OpenAL Soft is an LGPL-licensed, cross-platform, software implementation of the OpenAL 3D audio API.
+Status: install ok installed
+
+Package: openssl
+Version: 3.6.0
+Port-Version: 2
+Depends: vcpkg-cmake, vcpkg-cmake-config, vcpkg-cmake-get-vars
+Architecture: x64-windows
+Multi-Arch: same
+Abi: cf1d96372e85e6134d9586eb9172055fdf8d6b04108cc29d1bc2129f08aa02d2
+Description: OpenSSL is an open source project that provides a robust, commercial-grade, and full-featured toolkit for the Transport Layer Security (TLS) and Secure Sockets Layer (SSL) protocols. It is also a general-purpose cryptography library.
+Status: install ok installed
+
+Package: sdl2
+Version: 2.32.10
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 8624c80a08e29a1c44fe1e16314e9b32ac1ee7e0f30ebffc7b8899b3f56db83f
+Description: Simple DirectMedia Layer is a cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware via OpenGL and Direct3D.
+Status: install ok installed
+
+Package: sqlite3
+Version: 3.50.4
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 30dbfdc01fdb04c92897f3a4058c539df36de78250f2bf315a0138599546feac
+Description: SQLite is a software library that implements a self-contained, serverless, zero-configuration, transactional SQL database engine.
+Default-Features: json1
+Status: install ok installed
+
+Package: sqlite3
+Feature: json1
+Architecture: x64-windows
+Multi-Arch: same
+Description: Enable JSON functionality for sqlite3
+Status: install ok installed
+
+Package: zstd
+Version: 1.5.7
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-windows
+Multi-Arch: same
+Abi: 5b1d31efdc6b87f8d43aaf6166bb6254a509c548e26dcf06ef78076b87b079cd
+Description: Zstandard - Fast real-time compression algorithm
+Status: install ok installed
+
