@@ -5,7 +5,9 @@ endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
 project(luanti)
-set(PROJECT_NAME_CAPITALIZED "Luanti")
+# Single source of truth for user-facing branding
+set(LUANTI_BRAND_NAME "Construct IQ" CACHE STRING "User-visible application name")
+set(PROJECT_NAME_CAPITALIZED "${LUANTI_BRAND_NAME}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
