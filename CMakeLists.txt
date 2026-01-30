@@ -5,9 +5,43 @@ endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
 project(luanti)
-# Single source of truth for user-facing branding
-set(LUANTI_BRAND_NAME "Construct IQ" CACHE STRING "User-visible application name")
+
+# -------------------------------
+# Start Construct IQ branding 
+# -------------------------------
+
+# User-visible application name (what students/teachers see)
+set(LUANTI_BRAND_NAME "Construct IQ" CACHE STRING
+    "User-visible application name (window title, menus, about, etc.)")
+
+# Machine-safe brand identifier (for paths/app IDs; lowercase; no spaces)
+# Recommended: [a-z0-9_-] only
+set(LUANTI_BRAND_ID "constructiq" CACHE STRING
+    "Machine-safe brand identifier (recommended: [a-z0-9_-], used for paths/app IDs)")
+
+# Derived, sanitized ID used by the build (do NOT edit directly)
+set(LUANTI_BRAND_ID_SANITIZED "${LUANTI_BRAND_ID}")
+string(TOLOWER "${LUANTI_BRAND_ID_SANITIZED}" LUANTI_BRAND_ID_SANITIZED)
+string(STRIP "${LUANTI_BRAND_ID_SANITIZED}" LUANTI_BRAND_ID_SANITIZED)
+string(REGEX REPLACE "[^a-z0-9_-]" "" LUANTI_BRAND_ID_SANITIZED "${LUANTI_BRAND_ID_SANITIZED}")
+
+# Fail-fast if someone entered an invalid/empty ID (prevents broken install paths later)
+if(LUANTI_BRAND_ID_SANITIZED STREQUAL "")
+    message(FATAL_ERROR
+        "LUANTI_BRAND_ID is invalid after sanitization. "
+        "Set LUANTI_BRAND_ID to something like 'constructiq' (allowed: [a-z0-9_-]).")
+endif()
+
+# Historically-used Luanti variable for user-facing naming
 set(PROJECT_NAME_CAPITALIZED "${LUANTI_BRAND_NAME}")
+
+# Convenience aliases for downstream CMake (optional but practical)
+set(CONSTRUCT_IQ_NAME "${LUANTI_BRAND_NAME}")
+set(CONSTRUCT_IQ_ID   "${LUANTI_BRAND_ID_SANITIZED}")
+
+# -------------------------------
+# End Construct IQ branding 
+# -------------------------------
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
