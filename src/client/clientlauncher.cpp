@@ -17,6 +17,7 @@
 #include "fontengine.h"
 #include "clientlauncher.h"
 #include "version.h"
+#include "cmake_config.h"  // brings in CONSTRUCT_IQ_DISPLAY_VERSION
 #include "renderingengine.h"
 #include "settings.h"
 #include "gettime.h"
@@ -25,6 +26,7 @@
 #include <IGUISpriteBank.h>
 #include <ICameraSceneNode.h>
 #include <unordered_map>
+
 
 #if USE_SOUND
 	#include "sound/sound_openal.h"
@@ -160,13 +162,11 @@ bool ClientLauncher::run(GameStartData &start_data, const Settings &cmd_args)
 		!g_gamecallback->shutdown_requested) {
 		// Set the window caption
 		auto driver_name = m_rendering_engine->getVideoDriver()->getName();
-		std::string caption = std::string(PROJECT_NAME_C) +
-			" " + g_version_hash +
-			" [" + gettext("Main Menu") + "]" +
+		std::string caption = std::string(CONSTRUCT_IQ_DISPLAY_VERSION) +
+			" - " + gettext("Main Menu") +
 			" [" + driver_name + "]";
-
-		m_rendering_engine->get_raw_device()->
-			setWindowCaption(utf8_to_wide(caption).c_str());
+		m_rendering_engine->get_raw_device()->setWindowCaption(
+			utf8_to_wide(caption).c_str());
 
 #ifdef NDEBUG
 		try {

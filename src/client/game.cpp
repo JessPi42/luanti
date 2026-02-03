@@ -46,6 +46,7 @@
 #include "util/directiontables.h"
 #include "util/quicktune_shortcutter.h"
 #include "version.h"
+#include "cmake_config.h"  // brings in CONSTRUCT_IQ_DISPLAY_VERSION
 #include "script/scripting_client.h"
 #include "hud.h"
 #include <AnimatedMeshSceneNode.h>
@@ -899,15 +900,19 @@ bool Game::createClient(const GameStartData &start_data)
 	/* Set window caption
 	 */
 	auto driver_name = driver->getName();
-	std::string str = std::string(PROJECT_NAME_C) +
-			" " + g_version_hash + " [";
-	str += simple_singleplayer_mode ? gettext("Singleplayer")
-			: gettext("Multiplayer");
-	str += "] [";
-	str += driver_name;
-	str += "]";
-
-	device->setWindowCaption(utf8_to_wide(str).c_str());
+	std::string caption = std::string(CONSTRUCT_IQ_DISPLAY_VERSION) + " - ";
+	if (simple_singleplayer_mode) {
+		caption += gettext("singleplayer");
+	}
+	else {
+		// If connecting to a server, show its address; otherwise show "multiplayer"
+		if (!start_data.address.empty())
+			caption += start_data.address;
+		else
+			caption += gettext("multiplayer");
+	}
+	caption += " [" + std::string(driver_name) + "]";
+	device->setWindowCaption(utf8_to_wide(caption).c_str());
 
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
 	player->hurt_tilt_timer = 0;
