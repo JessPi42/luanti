@@ -17,7 +17,7 @@ set(LUANTI_BRAND_NAME "Construct IQ" CACHE STRING
 # Machine-safe brand identifier (for paths/app IDs; lowercase; no spaces)
 # Recommended: [a-z0-9_-] only
 set(LUANTI_BRAND_ID "constructiq" CACHE STRING
-    "Machine-safe brand identifier (recommended: [a-z0-9_-], used for paths/app IDs)")
+    "Machine-safe brand identifier used for paths/app IDs")
 
 # Derived, sanitized ID used by the build (do NOT edit directly)
 set(LUANTI_BRAND_ID_SANITIZED "${LUANTI_BRAND_ID}")
@@ -29,7 +29,7 @@ string(REGEX REPLACE "[^a-z0-9_-]" "" LUANTI_BRAND_ID_SANITIZED "${LUANTI_BRAND_
 if(LUANTI_BRAND_ID_SANITIZED STREQUAL "")
     message(FATAL_ERROR
         "LUANTI_BRAND_ID is invalid after sanitization. "
-        "Set LUANTI_BRAND_ID to something like 'constructiq' (allowed: [a-z0-9_-]).")
+        "Set LUANTI_BRAND_ID to something allowed: [a-z0-9_-].")
 endif()
 
 # Historically-used Luanti variable for user-facing naming
@@ -41,6 +41,21 @@ set(CONSTRUCT_IQ_ID   "${LUANTI_BRAND_ID_SANITIZED}")
 
 # -------------------------------
 # End Construct IQ branding 
+# -------------------------------
+
+# -------------------------------
+# Start Construct IQ product version
+# -------------------------------
+
+set(CONSTRUCT_IQ_VERSION_MAJOR 0)
+set(CONSTRUCT_IQ_VERSION_MINOR 1)
+set(CONSTRUCT_IQ_VERSION_PATCH 0)
+set(CONSTRUCT_IQ_VERSION_STRING
+	"${CONSTRUCT_IQ_VERSION_MAJOR}.${CONSTRUCT_IQ_VERSION_MINOR}.${CONSTRUCT_IQ_VERSION_PATCH}"
+)
+
+# -------------------------------
+#  End Construct IQ product version
 # -------------------------------
 
 set(CMAKE_CXX_STANDARD 17)
@@ -68,6 +83,18 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 	# Append "-debug" to version string
 	set(VERSION_STRING "${VERSION_STRING}-debug")
 endif()
+
+# -------------------------------
+# Start Construct IQ display version
+# -------------------------------
+
+set(CONSTRUCT_IQ_DISPLAY_VERSION
+	"${LUANTI_BRAND_NAME} ${CONSTRUCT_IQ_VERSION_STRING} (Luanti ${VERSION_STRING})"
+)
+
+# -------------------------------
+# End Construct IQ display version
+# -------------------------------
 
 # Configuration options
 set(BUILD_CLIENT TRUE CACHE BOOL "Build client")

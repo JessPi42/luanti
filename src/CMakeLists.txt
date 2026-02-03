@@ -1,5 +1,12 @@
 project(luanti)
 
+# --- MSVC PDB locking / link "hang" mitigation ---
+if(MSVC)
+  add_compile_options(/FS)          # prevents parallel cl.exe PDB collisions
+  add_link_options(/DEBUG:FASTLINK) # makes Debug linking far less painful
+endif()
+# ------------------------------------------------
+
 INCLUDE(CheckTypeSize)
 INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckLibraryExists)
@@ -383,16 +390,26 @@ configure_file(
 	"${PROJECT_BINARY_DIR}/cmake_config.h"
 )
 
+# Generate cmake_config_githash.h every build (or at least ensure it exists)
+set(GENERATED_GITHASH_H "${CMAKE_CURRENT_BINARY_DIR}/cmake_config_githash.h")
 
-# Add a target that always rebuilds cmake_config_githash.h
-add_custom_target(GenerateVersion
+add_custom_command(
+	OUTPUT "${GENERATED_GITHASH_H}"
 	COMMAND ${CMAKE_COMMAND}
-	-D "GENERATE_VERSION_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
-	-D "GENERATE_VERSION_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
-	-D "VERSION_STRING=${VERSION_STRING}"
-	-D "DEVELOPMENT_BUILD=${DEVELOPMENT_BUILD}"
-	-P "${CMAKE_SOURCE_DIR}/cmake/Modules/GenerateVersion.cmake"
-	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+		-DGENERATE_VERSION_SOURCE_DIR:PATH=${CMAKE_CURRENT_SOURCE_DIR}
+		-DGENERATE_VERSION_BINARY_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}
+		-DVERSION_STRING:STRING=${VERSION_STRING}
+		-DDEVELOPMENT_BUILD:BOOL=${DEVELOPMENT_BUILD}
+		-DCONSTRUCT_IQ_DISPLAY_VERSION:STRING=${CONSTRUCT_IQ_DISPLAY_VERSION}
+		-P ${CMAKE_SOURCE_DIR}/cmake/Modules/GenerateVersion.cmake
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	DEPENDS
+		${CMAKE_SOURCE_DIR}/cmake/Modules/GenerateVersion.cmake
+		${CMAKE_CURRENT_SOURCE_DIR}/cmake_config_githash.h.in
+	VERBATIM
+)
+
+add_custom_target(GenerateVersion DEPENDS "${GENERATED_GITHASH_H}")
 
 
 add_subdirectory(threading)
@@ -641,6 +658,7 @@ if(BUILD_CLIENT)
 		add_executable(${PROJECT_NAME})
 	endif()
 
+	add_dependencies(${PROJECT_NAME} GenerateVersion)
 
 	if(CMAKE_GENERATOR STREQUAL "Xcode")
 		# File with used entitlements
@@ -777,6 +795,8 @@ if(BUILD_SERVER)
 		${server_SRCS}
 		${extra_windows_SRCS}
 	)
+
+	add_dependencies(${PROJECT_NAME}server GenerateVersion)
 
 	# don't link the irrlicht library
 	get_target_property(
