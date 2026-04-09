@@ -106,15 +106,27 @@ The game directory can contain the following files:
                  an internal ID used to track versions.
     * `textdomain`: Textdomain used to translate description. Defaults to game id.
       See [Translating content meta](#translating-content-meta).
+    * `aliases = <comma-separated gameid aliases>`
+      e.g. `aliases = foo, bar` (where "foo" and "bar" are the legacy names)
+      This allows automatic loading of worlds using a gameid from this list.
+      This is intended to allow a full rename of a game, including its id.
 * `minetest.conf`:
   Used to set default settings when running this game.
+* `screenshot.{png,jpg,jpeg}`:
+  Preview image, shown in the main menu.
 * `settingtypes.txt`:
   In the same format as the one in builtin.
   This settingtypes.txt will be parsed by the menu and the settings will be
   displayed in the "Games" category in the advanced settings tab.
-* If the game contains a folder called `textures` the server will load it as a
-  texturepack, overriding mod textures.
-  Any server texturepack will override mod textures and the game texturepack.
+
+And the following directories:
+
+* `menu`:
+  Files related to the main menu, see chapter [Menu images](#menu-images).
+* `mods`:
+  Mods provided by the game.
+* `textures`:
+  See also chapter [Textures](#loading-order).
 
 Menu images
 -----------
@@ -228,7 +240,7 @@ A `Settings` file that provides meta information about the mod.
 * `textdomain`: Textdomain used to translate title and description. Defaults to modname.
   See [Translating content meta](#translating-content-meta).
 
-### `screenshot.png`
+### `screenshot.{png,jpg,jpeg}`
 
 A screenshot shown in the mod manager within the main menu. It should
 have an aspect ratio of 3:2 and a minimum size of 300×200 pixels.
@@ -515,6 +527,8 @@ By default the world is filled with air nodes. To set a different node use e.g.:
 Textures
 ========
 
+## Introduction
+
 Mods should generally prefix their textures with `modname_`, e.g. given
 the mod name `foomod`, a texture could be called:
 
@@ -536,6 +550,23 @@ or will be upscaled to that minimum resolution first without filtering.
 
 This is subject to change to move more control to the Lua API, but you can rely on
 low-res textures not suddenly becoming filtered.
+
+
+## Loading order
+
+Texture names are looked up in the following order. Top has the lowest priority.
+
+* Client: `$path_share/textures/base/pack`
+* Server: mod-provided textures, in their `textures` directory
+* Server: game textures, in `<game path>/textures`
+* Server: `$path_share/textures/server`
+* Server: `override.txt` in the path specified by the setting `texture_path`
+* Server: `override.txt` in `<game path>/textures`
+* Client: path specified by the setting `texture_path`
+* Client: `override.txt` in the path specified by the setting `texture_path`
+
+For details on texture packs, see [texture_packs.md](texture_packs.md).
+
 
 Texture modifiers
 -----------------
@@ -599,11 +630,11 @@ on top of `cobble.png`.
 
 Parameters:
 
-* `<t>`: tile count (in each direction)
-* `<n>`: animation frame count
-* `<p>`: current animation frame
+* `<t>`: draws a grid of `<t> * <t>` cracks onto each frame (default: `1`)
+* `<n>`: vertical count of frames of the base texture (often `1`)
+* `<p>`: crack animation frame (0-indexed)
 
-Draw a step of the crack animation on the texture.
+Draws a step of the crack animation on the texture.
 `crack` draws it normally, while `cracko` lays it over, keeping transparent
 pixels intact.
 
@@ -1864,6 +1895,8 @@ Displays text on the HUD.
 * `offset`: offset in pixels from position.
 * `size`: size of the text.
   The player-set font size is multiplied by size.x (y value isn't used).
+    * Float values are supported by clients >= 5.16.0. Older clients will receive
+      a rounded down integer value.
 * `style`: determines font style
   Bitfield with 1 = bold, 2 = italic, 4 = monospace
 
@@ -2095,6 +2128,8 @@ The following items are predefined and have special properties.
     * It can be overridden to change those properties:
         * globally using `core.override_item`
         * per-player using the special `"hand"` inventory list
+    * It cannot be used as an ItemStack object, because `""` represents the empty stack.
+      Therefore, it can't be stored in an inventory.
 
 Amount and wear
 ---------------
@@ -3091,7 +3126,7 @@ Elements
 
 ### `background9[<X>,<Y>;<W>,<H>;<texture name>;<auto_clip>;<middle>]`
 
-* 9-sliced background. See https://en.wikipedia.org/wiki/9-slice_scaling
+* 9-sliced background. See [Wikipedia](https://en.wikipedia.org/wiki/9-slice_scaling)
 * Middle is a rect which defines the middle of the 9-slice.
     * `x` - The middle will be x pixels from all sides.
     * `x,y` - The middle will be x pixels from the horizontal and y from the vertical.
@@ -3908,7 +3943,8 @@ Escape sequences
 ================
 
 Most text can contain escape sequences, that can for example color the text.
-There are a few exceptions: tab headers, dropdowns and vertical labels can't.
+There are a few exceptions: tab headers and dropdowns can't be colorized
+(but they *can* be translated).
 The following functions provide escape sequences:
 
 * `core.get_color_escape_sequence(color)`:
@@ -3961,24 +3997,164 @@ or [Wikipedia](https://en.wikipedia.org/wiki/Cartesian_coordinate_system#Orienta
 for a more detailed and pictorial explanation of these terms.
 
 
+Vectors
+=======
+
+Luanti provides two vector classes for working with coordinates and mathematical operations:
+
+* **Spatial Vectors** (`vector.*`) - 3-dimensional vectors for 3D positions, directions, and spatial operations
+* **2D Vectors** (`vector2.*`) - 2-dimensional vectors for 2D positions, screen coordinates, and 2D operations
+
+Both vector types share many common properties and operations, which are described in the following sections.
+
+Common to all vector types
+---------------------------
+
+### Special properties
+
+Vectors can be indexed with numbers and allow method and operator syntax.
+
+All these forms of addressing a vector `v` are valid:
+
+* For 3D vectors: `v[1]`, `v[3]`, `v.x`, `v[1] = 42`, `v.y = 13`
+* For 2D vectors: `v[1]`, `v[2]`, `v.x`, `v[1] = 42`, `v.y = 13`
+
+Note: Prefer letter over number indexing for performance and compatibility reasons.
+
+Where `v` is a vector and `foo` stands for any function name, `v:foo(...)` does
+the same as `vector.foo(v, ...)` (or `vector2.foo(v, ...)` for 2D vectors).
+
+`tostring` is defined for vectors, see `vector.to_string` and `vector2.to_string`.
+
+The metatable that is used for vectors can be accessed via `vector.metatable` or `vector2.metatable`.
+Do not modify it!
+
+All `vector.*` and `vector2.*` functions allow vectors (e.g., `{x = X, y = Y, z = Z}`) without metatables.
+Returned vectors always have a metatable set.
+
+Note: Vectors are *not* used for simple numeric arrays of the form `{num, num, num}` or `{num, num}`.
+Use proper vector tables with named fields (`x`, `y`, `z`) instead.
+
+### Operators
+
+Operators can be used if all of the involved vectors have metatables:
+
+* `v1 == v2`:
+    * Returns whether `v1` and `v2` are identical.
+* `-v`:
+    * Returns the additive inverse of v.
+* `v1 + v2`:
+    * Returns the sum of both vectors.
+    * Note: `+` cannot be used together with scalars.
+* `v1 - v2`:
+    * Returns the difference of `v1` subtracted by `v2`.
+    * Note: `-` cannot be used together with scalars.
+* `v * s` or `s * v`:
+    * Returns `v` scaled by `s`.
+* `v / s`:
+    * Returns `v` scaled by `1 / s`.
+
+### Common functions
+
+The following functions are available for both `vector` and `vector2` types with the same signature and behavior.
+Replace `vector` with `vector2` for 2D vectors (e.g., `vector2.add(v, x)`).
+
+For the following functions,
+`v`, `v1`, `v2` are vectors (either 3D or 2D depending on context),
+`p1`, `p2` are position vectors,
+`s` is a scalar (a number).
+
+* `vector.copy(v)`:
+    * Returns a copy of the vector `v`.
+* `vector.zero()`:
+    * Returns a new zero vector.
+    * For 3D: `(0, 0, 0)`. For 2D: `(0, 0)`.
+* `vector.random_direction()`:
+    * Returns a new vector of length 1, pointing in a direction chosen uniformly at random.
+* `vector.from_string(s[, init])`:
+    * Returns `v, np`, where `v` is a vector read from the given string `s` and
+      `np` is the next position in the string after the vector.
+    * Returns `nil` on failure.
+    * `s`: Has to begin with a substring of the form `"(x, y, z)"` (for 3D) or `"(x, y)"` (for 2D).
+      Additional spaces, omitting commas and adding an additional comma to the end is allowed.
+    * `init`: If given starts looking for the vector at this string index.
+* `vector.to_string(v)`:
+    * Returns a human-readable string of the form `"(x, y, z)"` (for 3D) or `"(x, y)"` (for 2D).
+    * `tostring(v)` does the same.
+    * Note: This function loses precision. For exact precision, use `core.serialize()` instead.
+    * Note: Precision may increase in future versions.
+* `vector.direction(p1, p2)`:
+    * Returns a vector of length 1 with direction `p1` to `p2`.
+    * If `p1` and `p2` are identical, returns a zero vector.
+* `vector.distance(p1, p2)`:
+    * Returns zero or a positive number, the distance between `p1` and `p2`.
+* `vector.length(v)`:
+    * Returns zero or a positive number, the length of vector `v`.
+* `vector.normalize(v)`:
+    * Returns a vector of length 1 with direction of vector `v`.
+    * If `v` has zero length, returns a zero vector.
+* `vector.floor(v)`:
+    * Returns a vector, each dimension rounded down.
+* `vector.ceil(v)`:
+    * Returns a vector, each dimension rounded up.
+* `vector.round(v)`:
+    * Returns a vector, each dimension rounded to nearest integer.
+    * At a multiple of 0.5, rounds away from zero.
+* `vector.sign(v, tolerance)`:
+    * Returns a vector where `math.sign` was called for each component.
+    * See [Helper functions](#helper-functions) for details on `math.sign`.
+* `vector.abs(v)`:
+    * Returns a vector with absolute values for each component.
+* `vector.apply(v, func, ...)`:
+    * Returns a vector where the function `func` has been applied to each component.
+    * `...` are optional arguments passed to `func`.
+* `vector.combine(v, w, func)`:
+    * Returns a vector where the function `func` has combined both components of `v` and `w`
+      for each component.
+* `vector.equals(v1, v2)`:
+    * Returns a boolean, `true` if the vectors are identical.
+* `vector.dot(v1, v2)`:
+    * Returns the dot product of `v1` and `v2`.
+* `vector.check(v)`:
+    * Returns a boolean value indicating whether `v` is a real vector, e.g. created
+      by a `vector.*` or `vector2.*` function.
+    * Returns `false` for anything else, including tables like `{x=3, y=1, z=4}` or `{x=3, y=1}`.
+* `vector.in_area(pos, min, max)`:
+    * Returns a boolean value indicating if `pos` is inside area formed by `min` and `max`.
+    * `min` and `max` are inclusive.
+    * If `min` is bigger than `max` on some axis, function always returns false.
+    * You can use `vector.sort` (or `vector2.sort` for 2D) if you have two vectors and don't know which are the minimum and the maximum.
+
+For the following functions `x` can be either a vector or a number:
+
+* `vector.add(v, x)`:
+    * Returns a vector.
+    * If `x` is a vector: Returns the sum of `v` and `x`.
+    * If `x` is a number: Adds `x` to each component of `v`.
+* `vector.subtract(v, x)`:
+    * Returns a vector.
+    * If `x` is a vector: Returns the difference of `v` subtracted by `x`.
+    * If `x` is a number: Subtracts `x` from each component of `v`.
+* `vector.multiply(v, s)`:
+    * Returns a scaled vector.
+    * For `vector` only, deprecated behavior: If `s` is a vector, returns the Schur product.
+* `vector.divide(v, s)`:
+    * Returns a scaled vector.
+    * For `vector` only, deprecated behavior: If `s` is a vector, returns the Schur quotient.
+
+
 Spatial Vectors
 ===============
 
 Luanti stores 3-dimensional spatial vectors in Lua as tables of 3 coordinates,
 and has a class to represent them (`vector.*`), which this chapter is about.
-For details on what a spatial vectors is, please refer to Wikipedia:
-https://en.wikipedia.org/wiki/Euclidean_vector.
+For details on what a spatial vector is, please refer to [Wikipedia](https://en.wikipedia.org/wiki/Euclidean_vector).
 
 Spatial vectors are used for various things, including, but not limited to:
 
 * any 3D spatial vector (x/y/z-directions)
 * Euler angles (pitch/yaw/roll in radians) (Spatial vectors have no real semantic
   meaning here. Therefore, most vector operations make no sense in this use case.)
-
-Note that they are *not* used for:
-
-* n-dimensional vectors where n is not 3 (ie. n=2)
-* arrays of the form `{num, num, num}`
 
 The API documentation may refer to spatial vectors, as produced by `vector.new`,
 by any of the following notations:
@@ -4010,27 +4186,18 @@ stated otherwise. Mods should adapt this for convenience reasons.
 Special properties of the class
 -------------------------------
 
-Vectors can be indexed with numbers and allow method and operator syntax.
+For special properties common to all vector types (indexing, method syntax, operators, etc.),
+see [Common to all vector types](#common-to-all-vector-types).
 
-All these forms of addressing a vector `v` are valid:
-`v[1]`, `v[3]`, `v.x`, `v[1] = 42`, `v.y = 13`
-Note: Prefer letter over number indexing for performance and compatibility reasons.
+Functions
+---------
 
-Where `v` is a vector and `foo` stands for any function name, `v:foo(...)` does
-the same as `vector.foo(v, ...)`, apart from deprecated functionality.
+For common functions available to both `vector` and `vector2`,
+see [Common functions](#common-functions).
 
-`tostring` is defined for vectors, see `vector.to_string`.
+The following functions are specific to `vector` (3D vectors).
 
-The metatable that is used for vectors can be accessed via `vector.metatable`.
-Do not modify it!
-
-All `vector.*` functions allow vectors `{x = X, y = Y, z = Z}` without metatables.
-Returned vectors always have a metatable set.
-
-Common functions and methods
-----------------------------
-
-For the following functions (and subchapters),
+For the following functions,
 `v`, `v1`, `v2` are vectors,
 `p1`, `p2` are position vectors,
 `s` is a scalar (a number),
@@ -4040,114 +4207,23 @@ vectors are written like this: `(x, y, z)`:
     * Returns a new vector `(a, b, c)`.
     * Deprecated: `vector.new()` does the same as `vector.zero()` and
       `vector.new(v)` does the same as `vector.copy(v)`
-* `vector.zero()`:
-    * Returns a new vector `(0, 0, 0)`.
-* `vector.random_direction()`:
-    * Returns a new vector of length 1, pointing into a direction chosen uniformly at random.
-* `vector.copy(v)`:
-    * Returns a copy of the vector `v`.
-* `vector.from_string(s[, init])`:
-    * Returns `v, np`, where `v` is a vector read from the given string `s` and
-      `np` is the next position in the string after the vector.
-    * Returns `nil` on failure.
-    * `s`: Has to begin with a substring of the form `"(x, y, z)"`. Additional
-           spaces, leaving away commas and adding an additional comma to the end
-           is allowed.
-    * `init`: If given starts looking for the vector at this string index.
-* `vector.to_string(v)`:
-    * Returns a string of the form `"(x, y, z)"`.
-    *  `tostring(v)` does the same.
-* `vector.direction(p1, p2)`:
-    * Returns a vector of length 1 with direction `p1` to `p2`.
-    * If `p1` and `p2` are identical, returns `(0, 0, 0)`.
-* `vector.distance(p1, p2)`:
-    * Returns zero or a positive number, the distance between `p1` and `p2`.
-* `vector.length(v)`:
-    * Returns zero or a positive number, the length of vector `v`.
-* `vector.normalize(v)`:
-    * Returns a vector of length 1 with direction of vector `v`.
-    * If `v` has zero length, returns `(0, 0, 0)`.
-* `vector.floor(v)`:
-    * Returns a vector, each dimension rounded down.
-* `vector.ceil(v)`:
-    * Returns a vector, each dimension rounded up.
-* `vector.round(v)`:
-    * Returns a vector, each dimension rounded to nearest integer.
-    * At a multiple of 0.5, rounds away from zero.
-* `vector.sign(v, tolerance)`:
-    * Returns a vector where `math.sign` was called for each component.
-    * See [Helper functions](#helper-functions) for details.
-* `vector.abs(v)`:
-    * Returns a vector with absolute values for each component.
-* `vector.apply(v, func, ...)`:
-    * Returns a vector where the function `func` has been applied to each
-      component.
-    * `...` are optional arguments passed to `func`.
-* `vector.combine(v, w, func)`:
-    * Returns a vector where the function `func` has combined both components of `v` and `w`
-      for each component
-* `vector.equals(v1, v2)`:
-    * Returns a boolean, `true` if the vectors are identical.
 * `vector.sort(v1, v2)`:
     * Returns in order minp, maxp vectors of the cuboid defined by `v1`, `v2`.
 * `vector.angle(v1, v2)`:
     * Returns the angle between `v1` and `v2` in radians.
-* `vector.dot(v1, v2)`:
-    * Returns the dot product of `v1` and `v2`.
 * `vector.cross(v1, v2)`:
     * Returns the cross product of `v1` and `v2`.
 * `vector.offset(v, x, y, z)`:
     * Returns the sum of the vectors `v` and `(x, y, z)`.
-* `vector.check(v)`:
-    * Returns a boolean value indicating whether `v` is a real vector, eg. created
-      by a `vector.*` function.
-    * Returns `false` for anything else, including tables like `{x=3,y=1,z=4}`.
-* `vector.in_area(pos, min, max)`:
-    * Returns a boolean value indicating if `pos` is inside area formed by `min` and `max`.
-    * `min` and `max` are inclusive.
-    * If `min` is bigger than `max` on some axis, function always returns false.
-    * You can use `vector.sort` if you have two vectors and don't know which are the minimum and the maximum.
 * `vector.random_in_area(min, max)`:
     * Returns a random integer position in area formed by `min` and `max`
     * `min` and `max` are inclusive.
     * You can use `vector.sort` if you have two vectors and don't know which are the minimum and the maximum.
 
-For the following functions `x` can be either a vector or a number:
-
-* `vector.add(v, x)`:
-    * Returns a vector.
-    * If `x` is a vector: Returns the sum of `v` and `x`.
-    * If `x` is a number: Adds `x` to each component of `v`.
-* `vector.subtract(v, x)`:
-    * Returns a vector.
-    * If `x` is a vector: Returns the difference of `v` subtracted by `x`.
-    * If `x` is a number: Subtracts `x` from each component of `v`.
-* `vector.multiply(v, s)`:
-    * Returns a scaled vector.
-    * Deprecated: If `s` is a vector: Returns the Schur product.
-* `vector.divide(v, s)`:
-    * Returns a scaled vector.
-    * Deprecated: If `s` is a vector: Returns the Schur quotient.
-
 Operators
 ---------
 
-Operators can be used if all of the involved vectors have metatables:
-
-* `v1 == v2`:
-    * Returns whether `v1` and `v2` are identical.
-* `-v`:
-    * Returns the additive inverse of v.
-* `v1 + v2`:
-    * Returns the sum of both vectors.
-    * Note: `+` cannot be used together with scalars.
-* `v1 - v2`:
-    * Returns the difference of `v1` subtracted by `v2`.
-    * Note: `-` cannot be used together with scalars.
-* `v * s` or `s * v`:
-    * Returns `v` scaled by `s`.
-* `v / s`:
-    * Returns `v` scaled by `1 / s`.
+For vector operators (`+`, `-`, `*`, `/`, `==`, unary `-`), see [Common to all vector types](#common-to-all-vector-types).
 
 Rotation-related functions
 --------------------------
@@ -4183,6 +4259,77 @@ For example:
 * `core.hash_node_position` (Only works on node positions.)
 * `core.dir_to_wallmounted` (Involves wallmounted param2 values.)
 
+
+
+
+2D Vectors
+==========
+
+Luanti stores 2-dimensional vectors in Lua as tables of 2 coordinates,
+and has a class to represent them (`vector2.*`).
+
+The API provides `vector2.new` to create vectors:
+
+* `vector2.new(x, y)`
+* `{x=num, y=num}` (Even here you are still supposed to use `vector2.new`.)
+
+Compatibility notes
+-------------------
+
+Vectors should be created using `vector2.new(x, y)` to ensure they have the
+proper metatable. This enables:
+
+* Method call syntax (e.g., `v:length()` instead of `vector2.length(v)`)
+* Operator overloading (e.g., `v1 + v2` instead of `vector2.add(v1, v2)`)
+* Type checking with `vector2.check()`
+
+Special properties of the class
+-------------------------------
+
+For special properties common to all vector types (indexing, method syntax, operators, etc.),
+see [Common to all vector types](#common-to-all-vector-types).
+
+Functions
+---------
+
+For common functions available to both `vector` and `vector2`,
+see [Common functions](#common-functions).
+
+The following functions are specific to `vector2` (2D vectors).
+
+For the following functions,
+`v`, `v1`, `v2` are vectors,
+`p1`, `p2` are position vectors,
+`s` is a scalar (a number),
+vectors are written like this: `(x, y)`:
+
+* `vector2.new(x, y)`:
+    * Returns a new vector `(x, y)`.
+* `vector2.from_angle(angle)`:
+    * Returns a new unit vector from an angle.
+    * `angle` is the angle in radians from the positive x-axis (counterclockwise).
+    * Example: `vector2.from_angle(math.pi / 2)` returns a vector pointing up `(0, 1)`.
+* `vector2.to_angle(v)`:
+    * Returns the angle of the vector in radians.
+    * `angle` is the angle from the positive x-axis (counterclockwise), in the range `(-pi, pi]`.
+    * The edge case of `(0, 0)` returns `0`.
+    * Example: `vector2.to_angle(vector2.new(0, 1))` returns `math.pi / 2`.
+* `vector2.sort(v1, v2)`:
+    * Returns in order minp, maxp vectors of the rectangle defined by `v1`, `v2`.
+* `vector2.angle(v1, v2)`:
+    * Returns the angle between `v1` and `v2` in radians.
+    * This is always a positive value (unsigned angle).
+* `vector2.rotate(v, angle)`:
+    * Returns a new vector rotated counterclockwise by `angle` radians around the origin.
+    * The length of the vector is preserved.
+    * Example: `vector2.rotate(vector2.new(1, 0), math.pi / 2)` returns `(0, 1)`.
+* `vector2.offset(v, x, y)`:
+    * Returns the sum of the vectors `v` and `(x, y)`.
+
+Operators
+---------
+
+For vector operators (`+`, `-`, `*`, `/`, `==`, unary `-`), see [Common to all vector types](#common-to-all-vector-types).
 
 
 
@@ -4226,7 +4373,7 @@ Helper functions
     * `string.pack(fmt, ...)`
     * `string.unpack(fmt, s, [pos])`
     * `string.packsize(fmt)`
-    * Backported from Lua 5.4, see https://www.lua.org/manual/5.4/manual.html#6.4.2
+    * Backported from Lua 5.4, see [Lua manual section 6.4.2](https://www.lua.org/manual/5.4/manual.html#6.4.2)
 * `core.wrap_text(str, limit, as_table)`: returns a string or table
     * Adds newlines to the string to keep it within the specified character
       limit
@@ -4368,7 +4515,7 @@ Two functions are provided to translate strings: `core.translate` and
   the client, the choice between singular and plural might be more complicated,
   but the choice will be done automatically using the value of `n`.
 
-  You can read https://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html
+  You can read [the Gettext documentation](https://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html)
   for more details on the differences of plurals between languages.
 
   Also note that plurals are only handled in .po or .mo files, and not in .tr files.
@@ -5782,7 +5929,7 @@ Utilities
       dynamic_add_media_table = true,
       -- particlespawners support texpools and animation of properties,
       -- particle textures support smooth fade and scale animations, and
-      -- sprite-sheet particle animations can by synced to the lifetime
+      -- sprite-sheet particle animations can be synced to the lifetime
       -- of individual particles (5.6.0)
       particlespawner_tweenable = true,
       -- allows get_sky to return a table instead of separate values (5.6.0)
@@ -5908,19 +6055,19 @@ Utilities
   ```
 
 * `core.protocol_versions`:
-  * Table mapping Luanti versions to corresponding protocol versions for modder convenience.
-  * For example, to check whether a client has at least the feature set
-    of Luanti 5.8.0 or newer, you could do:
-    `core.get_player_information(player_name).protocol_version >= core.protocol_versions["5.8.0"]`
-  * (available since 5.11)
+    * Table mapping Luanti versions to corresponding protocol versions for modder convenience.
+    * For example, to check whether a client has at least the feature set
+      of Luanti 5.8.0 or newer, you could do:
+      `core.get_player_information(player_name).protocol_version >= core.protocol_versions["5.8.0"]`
+    * (available since 5.11)
 
-  ```lua
-  {
-      [version string] = protocol version at time of release
-      -- every major and minor version has an entry
-      -- patch versions only for the first release whose protocol version is not already present in the table
-  }
-  ```
+    ```lua
+    {
+        [version string] = protocol version at time of release
+        -- every major and minor version has an entry
+        -- patch versions only for the first release whose protocol version is not already present in the table
+    }
+    ```
 
 * `core.get_player_window_information(player_name)`:
 
@@ -5966,6 +6113,7 @@ Utilities
       touch_controls = false,
   }
   ```
+
 * `core.path_exists(path)`: returns true if the given path exists else false
     * `path` is the path that will be tested can be either a directory or a file
 * `core.mkdir(path)`: returns success.
@@ -6335,8 +6483,8 @@ Call these functions only at load time!
     * Determines how much of a stack may be taken, put or moved to a
       player inventory.
     * Function arguments: see `core.register_on_player_inventory_action`
-    * Return a numeric value to limit the amount of items to be taken, put or
-      moved. A value of `-1` for `take` will make the source stack infinite.
+    * The return value behaves like the respective `allow_metadata_inventory_*`
+      item callback.
 * `core.register_on_player_inventory_action(function(player, action, inventory, inventory_info))`
     * Called after an item take, put or move event from/to/in a player inventory
     * These inventory actions are recognized:
@@ -6772,14 +6920,18 @@ Environment access
       emerged.
     * The function signature of callback is:
       `function EmergeAreaCallback(blockpos, action, calls_remaining, param)`
-        * `blockpos` is the *block* coordinates of the block that had been
-          emerged.
-        * `action` could be one of the following constant values:
-            * `core.EMERGE_CANCELLED`
-            * `core.EMERGE_ERRORED`
-            * `core.EMERGE_FROM_MEMORY`
-            * `core.EMERGE_FROM_DISK`
-            * `core.EMERGE_GENERATED`
+        * `blockpos` are the *block* coordinates of the block in question.
+        * `action` can be one of the following constant values:
+            * `core.EMERGE_GENERATED`: The block has been freshly generated.
+            * `core.EMERGE_FROM_MEMORY`: The block did not need to be loaded
+              because it was already in memory.
+            * `core.EMERGE_FROM_DISK`: The block was generated before and has been
+              loaded from the map database.
+            * `core.EMERGE_CANCELLED`: The block was not loaded for some reason.
+              Possible reasons include: Server shutdown, it was already being
+              emerged, outside of mapgen limits.
+              This event is not an error, but does *not* mean that the block is now present.
+            * `core.EMERGE_ERRORED`: Emerging the block has failed due to an error.
         * `calls_remaining` is the number of callbacks to be expected after
           this one.
         * `param` is the user-defined parameter passed to emerge_area (or
@@ -8962,6 +9114,11 @@ child will follow movement and rotation of that bone.
             * `fog_color`: ColorSpec, override the color of the fog.
                Unlike `base_color` above this will apply regardless of the skybox type.
                (default: `"#00000000"`, which means no override)
+        * `auto_dim_skybox`: boolean, whether to dim skybox brightness if
+          the sky is assumed not to be visible (e.g. in caves),
+          based on a hardcoded and sometimes buggy heuristic.
+          Requires a Luanti 5.16.0+ client and server.
+          (default: `true`)
 * `set_sky(base_color, type, {texture names}, clouds)`
     * Deprecated. Use `set_sky(sky_parameters)`
     * `base_color`: ColorSpec, defaults to white
@@ -9110,6 +9267,11 @@ child will follow movement and rotation of that bone.
         * `intensity` sets the intensity of the shadows from 0 (no shadows, default) to 1 (blackness)
         * `tint` tints the shadows with the provided color, with RGB values ranging from 0 to 255.
           (default `{r=0, g=0, b=0}`)
+        * `direction` is a direction vector that can override the direction of the light,
+          disregarding the sun/moon position. This is useful for custom skyboxes.
+          The default is a zero vector and disables the override.
+          Note: the vector points "outwards" so that `(0, 1, 0)` is equivalent to
+          the sun at midday shining straight down.
       * `exposure` is a table that controls automatic exposure.
         The basic exposure factor equation is `e = 2^exposure_correction / clamp(luminance, 2^luminance_min, 2^luminance_max)`
         * This has no effect on clients who have the "Automatic Exposure" effect disabled.
@@ -9522,7 +9684,8 @@ Player properties need to be saved manually.
     -- "node" looks exactly like a node in-world (supported since 5.12.0)
     --   Note that visual effects like waving or liquid reflections will not work.
 
-    visual_size = {x = 1, y = 1, z = 1},
+    visual_size = {x = number, y = number, z = number},
+    -- Defaults to `{x = 1, y = 1, z = 1}` for entities, but `{x = 1, y = 2, z = 1}` for players!
     -- Multipliers for the visual size. If `z` is not specified, `x` will be used
     -- to scale the entity along both horizontal axes.
 
@@ -10062,8 +10225,16 @@ Used by `core.register_node`, `core.register_craftitem`, and
     -- default: core.item_secondary_use
 
     on_drop = function(itemstack, dropper, pos),
-    -- Shall drop item and return the leftover itemstack.
-    -- The dropper may be any ObjectRef or nil.
+    -- Called when the player drops this item from an inventory.
+    -- Must return the left-over itemstack. Returning `nil` is equivalent to
+    -- the original itemstack (= inventory not modified).
+    -- WARNING: Only the count of the returned itemstack is significant. It is not
+    -- possible to modify the item, wear or metadata in a drop operation.
+    -- The returned itemstack must not have a higher count than the input stack.
+    -- Parameters:
+    -- * `itemstack`: the `ItemStack` to be dropped.
+    -- * `dropper`: any `ObjectRef` or `nil`.
+    -- * `pos`: position to drop the item at.
     -- default: core.item_drop
 
     on_pickup = function(itemstack, picker, pointed_thing, time_from_last_punch, ...),
@@ -10071,11 +10242,11 @@ Used by `core.register_node`, `core.register_craftitem`, and
     -- Shall pick-up the item and return the leftover itemstack or nil to not
     -- modify the dropped item.
     -- Parameters:
-    -- * `itemstack`: The `ItemStack` to be picked up.
-    -- * `picker`: Any `ObjectRef` or `nil`.
-    -- * `pointed_thing` (optional): The dropped item (a `"__builtin:item"`
-    --   luaentity) as `type="object"` `pointed_thing`.
-    -- * `time_from_last_punch, ...` (optional): Other parameters from
+    -- * `itemstack`: the `ItemStack` to be picked up.
+    -- * `picker`: any `ObjectRef` or `nil`.
+    -- * `pointed_thing` (optional): the dropped item (a `"__builtin:item"`
+    --   luaentity) as a `pointed_thing` with `type="object"`.
+    -- * `time_from_last_punch, ...` (optional): other parameters from
     --   `luaentity:on_punch`.
     -- default: core.item_pickup
 
@@ -10551,12 +10722,12 @@ Used by `core.register_node`.
     allow_metadata_inventory_put = function(pos, listname, index, stack, player),
     -- Called when a player wants to put something into the inventory.
     -- Return value: number of items allowed to put.
-    -- Return value -1: Allow and don't modify item count in inventory.
+    -- Return value -1: Allow and don't modify destination item.
 
     allow_metadata_inventory_take = function(pos, listname, index, stack, player),
     -- Called when a player wants to take something out of the inventory.
     -- Return value: number of items allowed to take.
-    -- Return value -1: Allow and don't modify item count in inventory.
+    -- Return value -1: Allow and don't modify source item.
 
     on_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player),
     on_metadata_inventory_put = function(pos, listname, index, stack, player),
@@ -11441,12 +11612,12 @@ Used by `core.create_detached_inventory`.
     allow_put = function(inv, listname, index, stack, player),
     -- Called when a player wants to put something into the inventory.
     -- Return value: number of items allowed to put.
-    -- Return value -1: Allow and don't modify item count in inventory.
+    -- Return value -1: Allow and don't modify destination item.
 
     allow_take = function(inv, listname, index, stack, player),
     -- Called when a player wants to take something out of the inventory.
     -- Return value: number of items allowed to take.
-    -- Return value -1: Allow and don't modify item count in inventory.
+    -- Return value -1: Allow and don't modify source item.
 
     on_move = function(inv, from_list, from_index, to_list, to_index, count, player),
     on_put = function(inv, listname, index, stack, player),
@@ -12059,6 +12230,10 @@ Used by `HTTPApiTable.fetch` and `HTTPApiTable.fetch_async`.
     -- Optional, if true performs a multipart HTTP request.
     -- Default is false.
     -- Not allowed for GET or HEAD method and `data` must be a table.
+
+    quiet = boolean,
+    -- Optional, if true then error messages are suppressed on failure.
+    -- Default is false.
 
     post_data = "Raw POST request data string" OR {field1 = "data1", field2 = "data2"},
     -- Deprecated, use `data` instead. Forces `method = "POST"`.

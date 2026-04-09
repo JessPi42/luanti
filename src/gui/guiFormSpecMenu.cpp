@@ -2993,7 +2993,8 @@ void GUIFormSpecMenu::regenerateGui(v2u32 screensize)
 
 		// Preserve focus
 		gui::IGUIElement *focused_element = Environment->getFocus();
-		if (focused_element && focused_element->getParent() == this) {
+		// Check recursively to cover elements inside e.g. scroll containers
+		if (focused_element && isMyChild(focused_element)) {
 			s32 focused_id = focused_element->getID();
 			if (focused_id > ID_PROCEED_BTN) {
 				for (const GUIFormSpecMenu::FieldSpec &field : m_fields) {
@@ -3360,8 +3361,14 @@ void GUIFormSpecMenu::legacySortElements(std::list<IGUIElement *>::iterator from
 		// TODO: getSpecByID is a linear search. It should made O(1), or cached here.
 		const FieldSpec *spec_a = getSpecByID(a->getID());
 		const FieldSpec *spec_b = getSpecByID(b->getID());
-		return spec_a && spec_b &&
-			spec_a->priority < spec_b->priority;
+		// The comparison has to be compatible with strict weak ordering
+		if (spec_a && spec_b)
+			return spec_a->priority < spec_b->priority;
+
+		if (spec_a && !spec_b)
+			return true;
+
+		return false;
 	});
 
 	// 3: Re-assign the pointers
@@ -3618,7 +3625,7 @@ void GUIFormSpecMenu::drawMenu()
 
 	// Draw white outline around keyboard-focused form elements.
 	const gui::IGUIElement *focused = Environment->getFocus();
-	if (focused && m_show_focus) {
+	if (focused && m_show_focus && focused->isTabStop() ) {
 		core::rect<s32> rect = focused->getAbsoluteClippingRect();
 		const video::SColor white(255, 255, 255, 255);
 		const s32 border = 2;
@@ -4046,6 +4053,14 @@ void GUIFormSpecMenu::acceptInput(FormspecQuitMode quitmode)
 
 		m_text_dst->gotText(fields);
 	}
+}
+
+bool GUIFormSpecMenu::remapClickOutside(const SEvent &event)
+{
+	// Don't remap a click outside the formspec to ESC when holding an item.
+	if (m_selected_item)
+		return false;
+	return GUIModalMenu::remapClickOutside(event);
 }
 
 bool GUIFormSpecMenu::preprocessEvent(const SEvent& event)
