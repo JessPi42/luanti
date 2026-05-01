@@ -7,16 +7,16 @@ endif()
 project(luanti)
 
 # -------------------------------
-# Start Construct IQ branding 
+# Start Cardinal Craft branding
 # -------------------------------
 
 # User-visible application name (what students/teachers see)
-set(LUANTI_BRAND_NAME "Construct IQ" CACHE STRING
+set(LUANTI_BRAND_NAME "Cardinal Craft" CACHE STRING
     "User-visible application name (window title, menus, about, etc.)")
 
 # Machine-safe brand identifier (for paths/app IDs; lowercase; no spaces)
 # Recommended: [a-z0-9_-] only
-set(LUANTI_BRAND_ID "constructiq" CACHE STRING
+set(LUANTI_BRAND_ID "cardinalcraft" CACHE STRING
     "Machine-safe brand identifier (recommended: [a-z0-9_-], used for paths/app IDs)")
 
 # Derived, sanitized ID used by the build (do NOT edit directly)
@@ -36,11 +36,11 @@ endif()
 set(PROJECT_NAME_CAPITALIZED "${LUANTI_BRAND_NAME}")
 
 # Convenience aliases for downstream CMake (optional but practical)
-set(CONSTRUCT_IQ_NAME "${LUANTI_BRAND_NAME}")
-set(CONSTRUCT_IQ_ID   "${LUANTI_BRAND_ID_SANITIZED}")
+set(CARDINAL_CRAFT_NAME "${LUANTI_BRAND_NAME}")
+set(CARDINAL_CRAFT_ID   "${LUANTI_BRAND_ID_SANITIZED}")
 
 # -------------------------------
-# End Construct IQ branding 
+# End Cardinal Craft branding
 # -------------------------------
 
 set(CMAKE_CXX_STANDARD 17)
